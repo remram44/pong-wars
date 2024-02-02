@@ -1,6 +1,9 @@
 use std::fs::File;
 use std::io::{Read, Write};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
+
+const MOVE_INTERVAL: u64 = 20; // 50 times per second
+const SAVE_INTERVAL: u64 = 30_000; // every 30 seconds
 
 struct GameState {
     grid: Vec<u8>,
@@ -147,9 +150,10 @@ fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> 
 
 fn main() {
     // Get game
-    let game = match File::open("game.bin") {
+    let mut game = match File::open("game.bin") {
         Ok(file) => {
             // Load last checkpoint
+            eprintln!("loading saved game");
             load_state(file).expect("reading saved game")
         }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -185,4 +189,22 @@ fn main() {
             panic!("reading saved game: {}", e);
         }
     };
+
+    let mut update_counter = 0;
+
+    loop {
+        update(&mut game);
+
+        update_counter += 1;
+
+        if update_counter * MOVE_INTERVAL >= SAVE_INTERVAL {
+            eprintln!("saving game");
+            let save_to = File::create("game.bin").expect("saving game");
+            save_state(save_to, &game).expect("saving game");
+
+            update_counter = 0;
+        }
+
+        std::thread::sleep(Duration::from_millis(MOVE_INTERVAL));
+    }
 }
