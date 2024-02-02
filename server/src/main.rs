@@ -60,6 +60,22 @@ fn update(game: &mut GameState) {
 }
 
 fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
+    let mut header = [0u8; 8];
+    reader.read_exact(&mut header)?;
+
+    // Read ball positions
+    let balls = [
+        [header[0] as i8, header[1] as i8],
+        [header[2] as i8, header[3] as i8],
+    ];
+
+    // Read ball velocities
+    let ballVels = [
+        [header[4] as i8, header[5] as i8],
+        [header[6] as i8, header[7] as i8],
+    ];
+
+    // Read grid
     let mut grid = vec![0u8; 30 * 30];
     let mut b = 0;
     for i in 0..(30 * 30) {
@@ -77,18 +93,25 @@ fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
 
     Ok(GameState {
         grid,
-        balls: [
-            [7, 14],
-            [22, 14],
-        ],
-        ballVels: [
-            [1, -1],
-            [-1, 1],
-        ],
+        balls,
+        ballVels,
     })
 }
 
 fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> {
+    // Write ball positions
+    writer.write_all(&[game.balls[0][0] as u8])?;
+    writer.write_all(&[game.balls[0][1] as u8])?;
+    writer.write_all(&[game.balls[1][0] as u8])?;
+    writer.write_all(&[game.balls[1][1] as u8])?;
+
+    // Write ball velocities
+    writer.write_all(&[game.ballVels[0][0] as u8])?;
+    writer.write_all(&[game.ballVels[0][1] as u8])?;
+    writer.write_all(&[game.ballVels[1][0] as u8])?;
+    writer.write_all(&[game.ballVels[1][1] as u8])?;
+
+    // Write grid
     let mut b = 0;
     for i in 0..(30 * 30) {
         if i > 0 && i % 8 == 0 {
@@ -100,6 +123,7 @@ fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> 
     if 30 * 30 % 8 != 0 {
         writer.write_all(&[b])?;
     }
+
     Ok(())
 }
 

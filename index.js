@@ -3,14 +3,8 @@ let score = document.getElementById('score');
 
 let grid = [];
 
-let balls = [
-  [7, 14],
-  [22, 14],
-];
-let ballVels = [
-  [1, -1],
-  [-1, 1],
-];
+let balls;
+let ballVels;
 
 function update() {
   for(let ball = 0; ball < 2; ++ball) {
@@ -101,7 +95,17 @@ fetch(pongData)
 })
 .then(function(buffer) {
   let array = new Uint8Array(buffer);
-  let j = 0;
+
+  balls = [
+    [array[0], array[1]],
+    [array[2], array[3]],
+  ];
+  ballVels = [
+    [array[4] == 1?1:-1, array[5] == 1?1:-1],
+    [array[6] == 1?1:-1, array[7] == 1?1:-1],
+  ];
+
+  let j = 8;
   let b;
   for(let i = 0; i < 30 * 30; ++i) {
     // Read a byte from the array every 8 bit
