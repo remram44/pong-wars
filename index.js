@@ -74,9 +74,9 @@ function draw() {
 
   for(let color = 0; color < 2; ++color) {
     if(color === 0) {
-      ctx.fillStyle = '#007700';
+      ctx.fillStyle = '#0d3410';
     } else {
-      ctx.fillStyle = '#77bb77';
+      ctx.fillStyle = '#449720';
     }
 
     for(let y = 0; y < 30; ++y) {
@@ -89,9 +89,9 @@ function draw() {
     }
   }
 
-  ctx.fillStyle = '#007700';
+  ctx.fillStyle = '#0d3410';
   ctx.fillRect(30 * balls[0][0], 30 * balls[0][1], 30, 30);
-  ctx.fillStyle = '#77bb77';
+  ctx.fillStyle = '#449720';
   ctx.fillRect(30 * balls[1][0], 30 * balls[1][1], 30, 30);
 
   score.innerText = 'day ' + counts[0] + ' | night ' + counts[1];
