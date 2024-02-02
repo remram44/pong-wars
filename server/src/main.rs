@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::{Read, Write};
+
 struct GameState {
     grid: Vec<u8>,
     balls: [[i8; 2]; 2],
@@ -56,5 +59,88 @@ fn update(game: &mut GameState) {
     }
 }
 
+fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
+    let mut grid = vec![0u8; 30 * 30];
+    let mut b = 0;
+    for i in 0..(30 * 30) {
+        // Read a byte from the array every 8 bit
+        if i % 8 == 0 {
+            let mut buf = [0u8; 1];
+            reader.read_exact(&mut buf)?;
+            b = buf[0];
+        }
+
+        // Read a bit into the grid
+        grid[i] = b >> 7;
+        b = (b << 1) & 0xFF;
+    }
+
+    Ok(GameState {
+        grid,
+        balls: [
+            [7, 14],
+            [22, 14],
+        ],
+        ballVels: [
+            [1, -1],
+            [-1, 1],
+        ],
+    })
+}
+
+fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> {
+    let mut b = 0;
+    for i in 0..(30 * 30) {
+        if i > 0 && i % 8 == 0 {
+            writer.write_all(&[b])?;
+            b = 0;
+        }
+        b = (b << 1) | game.grid[i];
+    }
+    if 30 * 30 % 8 != 0 {
+        writer.write_all(&[b])?;
+    }
+    Ok(())
+}
+
 fn main() {
+    // Get game
+    let game = match File::open("game.bin") {
+        Ok(file) => {
+            // Load last checkpoint
+            load_state(file).expect("reading saved game")
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // Create new game
+            eprintln!("initializing new game");
+            let mut grid = vec![0; 30 * 30];
+            for i in 0..(30 * 30) {
+                if i % 30 < 15 {
+                    grid[i] = 1;
+                } else {
+                    grid[i] = 0;
+                }
+            }
+            let game = GameState {
+                grid,
+                balls: [
+                    [7, 14],
+                    [22, 14],
+                ],
+                ballVels: [
+                    [1, -1],
+                    [-1, 1],
+                ],
+            };
+
+            // Save it immediately
+            let save_to = File::create("game.bin").expect("saving game");
+            save_state(save_to, &game).expect("saving game");
+
+            game
+        }
+        Err(e) => {
+            panic!("reading saved game: {}", e);
+        }
+    };
 }
