@@ -1,15 +1,7 @@
 let canvas = document.getElementById('pong');
 let score = document.getElementById('score');
 
-// For now, initialize to default
 let grid = [];
-for(let i = 0; i < 30 * 30; ++i) {
-  if(i % 30 < 15) {
-    grid[i] = 1;
-  } else {
-    grid[i] = 0;
-  }
-}
 
 let balls = [
   [7, 14],
@@ -67,7 +59,6 @@ function update() {
     ];
   }
 }
-setInterval(update, 20);
 
 function draw() {
   let counts = [0, 0];
@@ -99,4 +90,34 @@ function draw() {
 
   window.requestAnimationFrame(draw);
 }
-draw();
+
+// Get initial state
+fetch(pongData)
+.then(function(response) {
+  if(response.status !== 200) {
+    throw new Error('Error getting current game state');
+  }
+  return response.arrayBuffer();
+})
+.then(function(buffer) {
+  let array = new Uint8Array(buffer);
+  let j = 0;
+  let b;
+  for(let i = 0; i < 30 * 30; ++i) {
+    // Read a byte from the array every 8 bit
+    if(i % 8 === 0) {
+      b = array[j];
+      j += 1;
+    }
+
+    // Read a bit into the grid
+    grid[i] = b >> 7;
+    b = (b << 1) & 0xFF;
+  }
+
+  // Start simulating
+  setInterval(update, 20);
+
+  // Start rendering
+  draw();
+});
