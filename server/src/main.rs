@@ -63,9 +63,22 @@ fn update(game: &mut GameState) {
     }
 }
 
-fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
+fn load_state<R: Read>(mut reader: R) -> std::io::Result<(GameState, SystemTime)> {
     let mut header = [0u8; 16];
     reader.read_exact(&mut header)?;
+
+    // Read timestamp
+    let time_secs =
+        header[0] as u64
+        + (header[1] as u64) << 8
+        + (header[2] as u64) << 16
+        + (header[3] as u64) << 24;
+    let time_nanos =
+        header[4] as u32
+        + (header[5] as u32) << 8
+        + (header[6] as u32) << 16
+        + (header[7] as u32) << 24;
+    let time = SystemTime::UNIX_EPOCH + Duration::new(time_secs, time_nanos);
 
     // Read ball positions
     let balls = [
@@ -95,11 +108,14 @@ fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
         b = (b << 1) & 0xFF;
     }
 
-    Ok(GameState {
-        grid,
-        balls,
-        ballVels,
-    })
+    Ok((
+        GameState {
+            grid,
+            balls,
+            ballVels,
+        },
+        time,
+    ))
 }
 
 fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> {
@@ -150,7 +166,7 @@ fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> 
 
 fn main() {
     // Get game
-    let mut game = match File::open("game.bin") {
+    let (mut game, mut last_update) = match File::open("game.bin") {
         Ok(file) => {
             // Load last checkpoint
             eprintln!("loading saved game");
@@ -183,14 +199,13 @@ fn main() {
             let save_to = File::create("game.bin").expect("saving game");
             save_state(save_to, &game).expect("saving game");
 
-            game
+            (game, SystemTime::now())
         }
         Err(e) => {
             panic!("reading saved game: {}", e);
         }
     };
 
-    let mut last_update = SystemTime::now();
     let mut last_save = last_update;
 
     loop {
