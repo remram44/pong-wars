@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::time::{Duration, SystemTime};
 
-const MOVE_INTERVAL: u64 = 20; // 50 times per second
-const SAVE_INTERVAL: u64 = 30_000; // every 30 seconds
+const MOVE_INTERVAL: Duration = Duration::from_millis(20); // 50 times per second
+const SAVE_INTERVAL: Duration = Duration::from_millis(30_000); // every 30 seconds
 
 struct GameState {
     grid: Vec<u8>,
@@ -190,21 +190,28 @@ fn main() {
         }
     };
 
-    let mut update_counter = 0;
+    let mut last_update = SystemTime::now();
+    let mut last_save = last_update;
 
     loop {
         update(&mut game);
 
-        update_counter += 1;
+        let now = SystemTime::now();
 
-        if update_counter * MOVE_INTERVAL >= SAVE_INTERVAL {
+        if last_save + SAVE_INTERVAL <= now {
             eprintln!("saving game");
             let save_to = File::create("game.bin").expect("saving game");
             save_state(save_to, &game).expect("saving game");
 
-            update_counter = 0;
+            last_save = now;
         }
 
-        std::thread::sleep(Duration::from_millis(MOVE_INTERVAL));
+        last_update = now;
+        if last_update + MOVE_INTERVAL > now {
+            std::thread::sleep(
+                MOVE_INTERVAL
+                - now.duration_since(last_update).unwrap()
+            );
+        }
     }
 }

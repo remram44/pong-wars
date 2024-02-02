@@ -57,7 +57,18 @@ function update() {
   }
 }
 
+let lastUpdate = null;
+
 function draw() {
+  let now = Date.now();
+  if(lastUpdate === null) {
+    lastUpdate = now;
+  } else {
+    for(; lastUpdate + MOVE_INTERVAL <= now; lastUpdate += MOVE_INTERVAL) {
+      update();
+    }
+  }
+
   let counts = [0, 0];
   let ctx = canvas.getContext('2d');
 
@@ -148,9 +159,6 @@ function loadGame() {
 
     if(!gameInitialized) {
       gameInitialized = true;
-
-      // Start simulating
-      setInterval(update, MOVE_INTERVAL);
 
       // Start rendering
       draw();
