@@ -1,3 +1,6 @@
+const MOVE_INTERVAL = 20;
+const SYNC_INTERVAL = 60000;
+
 let canvas = document.getElementById('pong');
 let score = document.getElementById('score');
 
@@ -139,7 +142,7 @@ function loadGame() {
     }
 
     // Update until we catch up
-    for(let time = fileTimestampMs; time < Date.now(); time += 20) {
+    for(let time = fileTimestampMs; time < Date.now(); time += MOVE_INTERVAL) {
       update();
     }
 
@@ -147,7 +150,7 @@ function loadGame() {
       gameInitialized = true;
 
       // Start simulating
-      setInterval(update, 20);
+      setInterval(update, MOVE_INTERVAL);
 
       // Start rendering
       draw();
@@ -155,7 +158,7 @@ function loadGame() {
   })
   .finally(function() {
     // Sync again soon
-    setTimeout(loadGame, 60000);
+    setTimeout(loadGame, SYNC_INTERVAL);
   });
 }
 loadGame();
