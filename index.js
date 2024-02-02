@@ -138,6 +138,11 @@ function loadGame() {
       b = (b << 1) & 0xFF;
     }
 
+    // Update until we catch up
+    for(let time = fileTimestampMs; time < Date.now(); time += 20) {
+      update();
+    }
+
     if(!gameInitialized) {
       gameInitialized = true;
 
