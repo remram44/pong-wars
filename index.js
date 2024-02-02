@@ -86,58 +86,71 @@ function draw() {
 }
 
 // Get initial state
-fetch(pongData)
-.then(function(response) {
-  if(response.status !== 200) {
-    throw new Error('Error getting current game state');
-  }
-  return response.arrayBuffer();
-})
-.then(function(buffer) {
-  let array = new Uint8Array(buffer);
+let gameInitialized = false;
+function loadGame() {
+  console.log("Loading game from server");
+  fetch(pongData)
+  .then(function(response) {
+    if(response.status !== 200) {
+      throw new Error('Error getting current game state');
+    }
+    return response.arrayBuffer();
+  })
+  .then(function(buffer) {
+    let array = new Uint8Array(buffer);
 
-  let fileTimestampMs = (
-    1000 * (
-      array[0]
-      + (array[1] << 8)
-      + (array[2] << 16)
-      + (array[3] << 24)
-    )
-    + 0.000001 * (
-      array[4]
-      + (array[5] << 8)
-      + (array[6] << 16)
-      + (array[7] << 24)
-    )
-  );
-  console.log("File is from", Date.now() - fileTimestampMs, "ms ago");
+    let fileTimestampMs = (
+      1000 * (
+        array[0]
+        + (array[1] << 8)
+        + (array[2] << 16)
+        + (array[3] << 24)
+      )
+      + 0.000001 * (
+        array[4]
+        + (array[5] << 8)
+        + (array[6] << 16)
+        + (array[7] << 24)
+      )
+    );
+    console.log("File is from", Date.now() - fileTimestampMs, "ms ago");
 
-  balls = [
-    [array[8], array[9]],
-    [array[10], array[11]],
-  ];
-  ballVels = [
-    [array[12] == 1?1:-1, array[13] == 1?1:-1],
-    [array[14] == 1?1:-1, array[15] == 1?1:-1],
-  ];
+    balls = [
+      [array[8], array[9]],
+      [array[10], array[11]],
+    ];
+    ballVels = [
+      [array[12] == 1?1:-1, array[13] == 1?1:-1],
+      [array[14] == 1?1:-1, array[15] == 1?1:-1],
+    ];
 
-  let j = 16;
-  let b;
-  for(let i = 0; i < 30 * 30; ++i) {
-    // Read a byte from the array every 8 bit
-    if(i % 8 === 0) {
-      b = array[j];
-      j += 1;
+    let j = 16;
+    let b;
+    for(let i = 0; i < 30 * 30; ++i) {
+      // Read a byte from the array every 8 bit
+      if(i % 8 === 0) {
+        b = array[j];
+        j += 1;
+      }
+
+      // Read a bit into the grid
+      grid[i] = b >> 7;
+      b = (b << 1) & 0xFF;
     }
 
-    // Read a bit into the grid
-    grid[i] = b >> 7;
-    b = (b << 1) & 0xFF;
-  }
+    if(!gameInitialized) {
+      gameInitialized = true;
 
-  // Start simulating
-  setInterval(update, 20);
+      // Start simulating
+      setInterval(update, 20);
 
-  // Start rendering
-  draw();
-});
+      // Start rendering
+      draw();
+    }
+  })
+  .finally(function() {
+    // Sync again soon
+    setTimeout(loadGame, 60000);
+  });
+}
+loadGame();
