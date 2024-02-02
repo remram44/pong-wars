@@ -96,16 +96,32 @@ fetch(pongData)
 .then(function(buffer) {
   let array = new Uint8Array(buffer);
 
+  let fileTimestampMs = (
+    1000 * (
+      array[0]
+      + (array[1] << 8)
+      + (array[2] << 16)
+      + (array[3] << 24)
+    )
+    + 0.000001 * (
+      array[4]
+      + (array[5] << 8)
+      + (array[6] << 16)
+      + (array[7] << 24)
+    )
+  );
+  console.log("File is from", Date.now() - fileTimestampMs, "ms ago");
+
   balls = [
-    [array[0], array[1]],
-    [array[2], array[3]],
+    [array[8], array[9]],
+    [array[10], array[11]],
   ];
   ballVels = [
-    [array[4] == 1?1:-1, array[5] == 1?1:-1],
-    [array[6] == 1?1:-1, array[7] == 1?1:-1],
+    [array[12] == 1?1:-1, array[13] == 1?1:-1],
+    [array[14] == 1?1:-1, array[15] == 1?1:-1],
   ];
 
-  let j = 8;
+  let j = 16;
   let b;
   for(let i = 0; i < 30 * 30; ++i) {
     // Read a byte from the array every 8 bit

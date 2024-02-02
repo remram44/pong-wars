@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{Read, Write};
+use std::time::SystemTime;
 
 struct GameState {
     grid: Vec<u8>,
@@ -60,19 +61,19 @@ fn update(game: &mut GameState) {
 }
 
 fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
-    let mut header = [0u8; 8];
+    let mut header = [0u8; 16];
     reader.read_exact(&mut header)?;
 
     // Read ball positions
     let balls = [
-        [header[0] as i8, header[1] as i8],
-        [header[2] as i8, header[3] as i8],
+        [header[8] as i8, header[9] as i8],
+        [header[10] as i8, header[11] as i8],
     ];
 
     // Read ball velocities
     let ballVels = [
-        [header[4] as i8, header[5] as i8],
-        [header[6] as i8, header[7] as i8],
+        [header[12] as i8, header[13] as i8],
+        [header[14] as i8, header[15] as i8],
     ];
 
     // Read grid
@@ -99,6 +100,23 @@ fn load_state<R: Read>(mut reader: R) -> std::io::Result<GameState> {
 }
 
 fn save_state<W: Write>(mut writer: W, game: &GameState) -> std::io::Result<()> {
+    // Write current timestamp
+    let time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let time_secs = time.as_secs();
+    let time_nanos = time.subsec_nanos();
+    writer.write_all(&[
+        time_secs as u8,
+        (time_secs >> 8) as u8,
+        (time_secs >> 16) as u8,
+        (time_secs >> 24) as u8,
+    ])?;
+    writer.write_all(&[
+        time_nanos as u8,
+        (time_nanos >> 8) as u8,
+        (time_nanos >> 16) as u8,
+        (time_nanos >> 24) as u8,
+    ])?;
+
     // Write ball positions
     writer.write_all(&[game.balls[0][0] as u8])?;
     writer.write_all(&[game.balls[0][1] as u8])?;
